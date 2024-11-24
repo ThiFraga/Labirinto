@@ -8,5 +8,6 @@ int identifyIPVersion(const char *vrs);
 void DieWithUserMessage(const char *msg, const char *detail);
 void DieWithSystemMessage(const char *msg);
 int** getMazeFromFile(const char* filename, int* size);
+void handleGame(int clntSocket,const char *filename);
 
 #endif

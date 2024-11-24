@@ -1,9 +1,15 @@
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include "Server.h"
 
-#define MAX_SIZE 10
+#define MAX_SIZE 10 // Tamanho máximo da matriz
+#define BUFSIZE 512 // Tamanho máximo do buffer
+
 
 int identifyIPVersion(const char *vrs) {
     if(strcmp(vrs, "v4") == 0) return 1;
@@ -63,4 +69,30 @@ int** getMazeFromFile(const char* filename, int* size) {
 
     fclose(file);
     return matrix;
+}
+
+void handleGame(int clntSocket,const char *filename) {
+    char buffer[BUFSIZE]; // Buffer for mensagem recebida
+    char response[BUFSIZE + 20]; // Buffer para resposta (com prefixo)
+    int **maze;
+    int mazeSize;
+    ssize_t numBytesRcvd = recv(clntSocket, buffer, BUFSIZE - 1, 0);
+    if (numBytesRcvd < 0)
+        DieWithSystemMessage("recv() failed");
+
+    maze = getMazeFromFile(filename, &mazeSize);
+
+    if (maze == NULL)
+        DieWithUserMessage("Maze not found", "Unable to load maze from file");
+
+    for(;;){
+
+    }
+
+    // Liberar memória alocada
+    for (int i = 0; i < mazeSize; i++)
+    {
+        free(maze[i]);
+    }
+    free(maze);
 }
