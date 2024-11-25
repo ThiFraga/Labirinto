@@ -7,13 +7,6 @@
 #include <arpa/inet.h>
 #include "Server.h"
 
-struct action
-{
-    int type;
-    int moves[100];
-    int board[10][10];
-};
-
 int main(int argc, char *argv[])
 {
     FILE *arq;
@@ -69,7 +62,7 @@ int main(int argc, char *argv[])
 
         char clntName[INET_ADDRSTRLEN]; // String to contain client address
         if (inet_ntop(AF_INET, &clntAddr.sin_addr.s_addr, clntName, sizeof(clntName)) != NULL)
-            printf("client connected");
+            printf("client connected\n");
         else
             puts("Unable to get client address");
         handleGame(clntSock, argv[4]);

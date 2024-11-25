@@ -8,18 +8,12 @@
 #include <arpa/inet.h>
 #include "Client.h"
 
-struct action
-{
-    int type;
-    int moves[100];
-    int board[10][10];
-};
-
 int main(int argc, char *argv[]) {
     char input[50];
     int started = 0;
     int numberInput = 10;
     int moveDirection = 0;
+    action messageToSend,messageRecv;
     
     // check number of arguments
     if(argc != 3) DieWithUserMessage("Parameter(s)", "<Server Address> <Server Port>");
@@ -49,8 +43,20 @@ int main(int argc, char *argv[]) {
 
     // game loop
     for(;;){
-        fgets(input,sizeof(input),stdin);
-        
+        fgets(input,sizeof(input),stdin); // command input
+
+        messageToSend = getMessageType(input);
+
+        // TRATAMENTO DE ERROS
+        if(messageToSend.type == 10) {
+            printf("error: command not found\n");
+        } else if (started == 0 && messageToSend.type != 0) {
+            printf("error: start the game first\n");
+        } else {
+            // TODO: Erro movimento inválido
+            if(messageToSend.type == 0) started = 1;
+            ssize_t numBytes = send(sock,&messageToSend,sizeof(messageToSend),0);  
+        }
 
 
     }
