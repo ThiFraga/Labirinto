@@ -9,44 +9,53 @@
 
 int main(int argc, char *argv[])
 {
-    FILE *arq;
     in_port_t servPort;
 
-    // check if the number of arguments is suficient
+    // Check if the number of arguments is sufficient
     if (argc < 5)
         DieWithUserMessage("Parameters", "<IP Version> <Server Port> -i <maze file>");
 
-    int ipParameter = identifyIPVersion(argv[1]); // check if is IPv4 IPv6 or invalid
+    int ipParameter = identifyIPVersion(argv[1]); // Check if IPv4, IPv6, or invalid
     if (ipParameter == 0)
         DieWithUserMessage("Parameter", "<IP Version> invalid!");
 
-    int domain;
-    if (ipParameter == 1)
-        domain = AF_INET;
-    else if (ipParameter == 2)
-        domain = AF_INET6;
+    int domain = (ipParameter == 1) ? AF_INET : AF_INET6;
 
     // Create socket for incoming connections
     int servSock; // Socket descriptor for server
-    if ((servSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
+    if ((servSock = socket(domain, SOCK_STREAM, IPPROTO_TCP)) < 0)
         DieWithSystemMessage("socket() failed");
 
-    servPort = atoi(argv[2]); // First arg: local port
+    servPort = atoi(argv[2]); // Second arg: local port
 
-    // Construct local address structure
-    struct sockaddr_in servAddr;                  // Local address
-    memset(&servAddr, 0, sizeof(servAddr));       // Zero out structure
-    servAddr.sin_family = domain;                 // IPv4 or IPv6 address family
-    servAddr.sin_addr.s_addr = htonl(INADDR_ANY); // Any incoming interface
-    servAddr.sin_port = htons(servPort);          // Local port
+    if (domain == AF_INET) {
+        // Construct local address structure for IPv4
+        struct sockaddr_in servAddr;
+        memset(&servAddr, 0, sizeof(servAddr));       // Zero out structure
+        servAddr.sin_family = domain;                 // IPv4 address family
+        servAddr.sin_addr.s_addr = htonl(INADDR_ANY); // Any incoming interface
+        servAddr.sin_port = htons(servPort);          // Local port
 
-    // Bind to the local address
-    if (bind(servSock, (struct sockaddr *)&servAddr, sizeof(servAddr)) < 0)
-        DieWithSystemMessage("bind() failed");
+        // Bind to the local address
+        if (bind(servSock, (struct sockaddr *)&servAddr, sizeof(servAddr)) < 0)
+            DieWithSystemMessage("bind() failed");
+    } else if (domain == AF_INET6) {
+        // Construct local address structure for IPv6
+        struct sockaddr_in6 servAddr6;
+        memset(&servAddr6, 0, sizeof(servAddr6));         // Zero out structure
+        servAddr6.sin6_family = domain;                  // IPv6 address family
+        servAddr6.sin6_addr = in6addr_any;               // Any incoming interface
+        servAddr6.sin6_port = htons(servPort);           // Local port
+
+        // Bind to the local address
+        if (bind(servSock, (struct sockaddr *)&servAddr6, sizeof(servAddr6)) < 0)
+            DieWithSystemMessage("bind() failed");
+    }
 
     // Mark the socket so it will listen for incoming connections
     if (listen(servSock, 1) < 0)
         DieWithSystemMessage("listen() failed");
+
 
     for(;;) {
         struct sockaddr_in clntAddr; // Client address

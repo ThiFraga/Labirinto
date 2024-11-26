@@ -8,57 +8,102 @@
 #include <arpa/inet.h>
 #include "Client.h"
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     char input[50];
     int started = 0;
-    int numberInput = 10;
-    int moveDirection = 0;
-    action messageToSend,messageRecv;
-    
-    // check number of arguments
-    if(argc != 3) DieWithUserMessage("Parameter(s)", "<Server Address> <Server Port>");
+    action messageToSend, messageRecv;
+    ssize_t numBytesRecv;
 
-    char *servIP = argv[1]; // First arg: server IP address (dotted quad)
+    // Check number of arguments
+    if (argc != 3)
+        DieWithUserMessage("Parameter(s)", "<Server Address> <Server Port>");
 
-    // Third arg (optional): server port (numeric). 7 is well-known echo port
-    in_port_t servPort = atoi(argv[2]);
+    char *servIP = argv[1];             // First arg: server IP address (string format)
+    in_port_t servPort = atoi(argv[2]); // Second arg: server port (numeric)
+
+    int domain;                       // Domain type (AF_INET or AF_INET6)
+    struct sockaddr_storage servAddr; // Supports both IPv4 and IPv6
+    socklen_t servAddrLen;
+
+    // Detect IP type (IPv4 or IPv6)
+    if (inet_pton(AF_INET, servIP, &((struct sockaddr_in *)&servAddr)->sin_addr) == 1)
+    {
+        // IPv4 address
+        domain = AF_INET;
+        struct sockaddr_in *addr4 = (struct sockaddr_in *)&servAddr;
+        addr4->sin_family = AF_INET;
+        addr4->sin_port = htons(servPort);
+        servAddrLen = sizeof(struct sockaddr_in);
+    }
+    else if (inet_pton(AF_INET6, servIP, &((struct sockaddr_in6 *)&servAddr)->sin6_addr) == 1)
+    {
+        // IPv6 address
+        domain = AF_INET6;
+        struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)&servAddr;
+        addr6->sin6_family = AF_INET6;
+        addr6->sin6_port = htons(servPort);
+        servAddrLen = sizeof(struct sockaddr_in6);
+    }
+    else
+    {
+        DieWithUserMessage("inet_pton() failed", "Invalid IP address format");
+    }
 
     // Create a reliable, stream socket using TCP
-    int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (sock < 0) DieWithSystemMessage("socket() failed");
+    int sock = socket(domain, SOCK_STREAM, IPPROTO_TCP);
+    if (sock < 0)
+        DieWithSystemMessage("socket() failed");
 
-    // Construct the server address structure
-    struct sockaddr_in servAddr; // Server address
-    memset(&servAddr, 0, sizeof(servAddr)); // Zero out structure
-    servAddr.sin_family = AF_INET; // IPv4 address family
-    // Convert address
-
-    int rtnVal = inet_pton(AF_INET, servIP, &servAddr.sin_addr.s_addr);
-    if (rtnVal == 0) DieWithUserMessage("inet_pton() failed", "invalid address string");
-    else if (rtnVal < 0) DieWithSystemMessage("inet_pton() failed");
-    servAddr.sin_port = htons(servPort); // Server port
-
-    // Establish the connection to the echo server
-    if (connect(sock, (struct sockaddr *) &servAddr, sizeof(servAddr)) < 0) DieWithSystemMessage("connect() failed");
+    // Establish the connection to the server
+    if (connect(sock, (struct sockaddr *)&servAddr, servAddrLen) < 0)
+        DieWithSystemMessage("connect() failed");
 
     // game loop
-    for(;;){
-        fgets(input,sizeof(input),stdin); // command input
+    for (;;)
+    {
+        fgets(input, sizeof(input), stdin); // command input
 
-        messageToSend = getMessageType(input);
+        messageToSend = getMessage(input);
 
         // TRATAMENTO DE ERROS
-        if(messageToSend.type == 10) {
+        if (messageToSend.type == 10)
+        {
             printf("error: command not found\n");
-        } else if (started == 0 && messageToSend.type != 0) {
+        }
+        else if (started == 0 && messageToSend.type != 0)
+        {
             printf("error: start the game first\n");
-        } else {
+        }
+        else
+        {
             // TODO: Erro movimento inválido
-            if(messageToSend.type == 0) started = 1;
-            ssize_t numBytes = send(sock,&messageToSend,sizeof(messageToSend),0);  
+            if (messageToSend.type == 0)
+                started = 1;
+
+            ssize_t numBytes = send(sock, &messageToSend, sizeof(messageToSend), 0);
         }
 
-
+        numBytesRecv = recv(sock, &messageRecv, sizeof(action), 0);
+        if (numBytesRecv > 0)
+        {
+            if (messageRecv.type == 4)
+            {
+                if (messageToSend.type == 1 || messageToSend.type == 0)
+                {
+                    printPossibleMoves(messageRecv.moves);
+                }
+                if(messageToSend.type == 2) {
+                    printMap(messageRecv.board);
+                }
+            }
+            if(messageRecv.type == 5)
+            {
+                printf("You escaped!\n");
+                printMap(messageRecv.board);
+            }
+            
+        }
     }
     return 0;
 }

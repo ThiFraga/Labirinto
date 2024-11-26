@@ -1,6 +1,10 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
+#define MAXMOVES 100
+#define MAXMAZESIZE 10
+#define MAXMOVENAMESIZE 10
+
 typedef struct
 {
     int type;
@@ -11,6 +15,9 @@ typedef struct
 void DieWithUserMessage(const char *msg, const char *detail);
 void DieWithSystemMessage(const char *msg);
 void cleanInput(char *str);
-action getMessageType(char* msg);
+action getMessage(char* msg);
+void printPossibleMoves(int moves[]);
+char* getCharEquivalent(int value);
+void printMap(int maze[MAXMAZESIZE][MAXMAZESIZE]);
 
 #endif

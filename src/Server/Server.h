@@ -4,6 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define MAXMOVES 100
+#define MAXMAZESIZE 10
+
 typedef struct 
 {
     int type;

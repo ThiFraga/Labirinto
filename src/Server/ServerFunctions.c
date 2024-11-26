@@ -83,55 +83,171 @@ int **getMazeFromFile(const char *filename, int *size)
     return matrix;
 }
 
-int** getInitialUpdatedMaze(int **mazeInitial, int mazeSize, PlayerPos *pos) {
-    int rowIn, colIn, i=0, j=0;
-    int iRef, jRef;
+int **getInitialUpdatedMaze(int **mazeInitial, int mazeSize, PlayerPos *pos, PlayerPos *exit)
+{
+    int i, j;
+
+    // Alocação dinâmica para nova matriz
     int **newMaze = (int **)malloc(mazeSize * sizeof(int *));
     for (i = 0; i < mazeSize; i++)
     {
         newMaze[i] = (int *)malloc(mazeSize * sizeof(int));
     }
-    while(i != mazeSize){
-        if(mazeInitial[i][j] == 2) {
-            pos->row = i;
-            pos->col = j;
-        }
-        if(i == 0 || i == 5){
-            if(j == mazeSize - 1) {
-                j = 0;
-                i++;
-            } else j++;
-        } else {
-            if(j == 0) j = 5;
-            else {
-                j = 0;
-                i++;
+
+    // Encontrar a posição inicial do jogador (valor 2 na matriz)
+    for (i = 0; i < mazeSize; i++)
+    {
+        for (j = 0; j < mazeSize; j++)
+        {
+            if (mazeInitial[i][j] == 2)
+            {
+                pos->row = i;
+                pos->col = j;
             }
         }
     }
-    for (i = 0; i < mazeSize; i++) {
-        for (j = 0; j < mazeSize; j++) {
-            iRef = (pos->row-i)*(pos->row-i);
-            jRef = (pos->col-j)*(pos->col-j);
 
-            if(iRef == 1 || jRef == 1) {
+    // Atualizar a nova matriz com base na posição inicial do jogador
+    for (i = 0; i < mazeSize; i++)
+    {
+        for (j = 0; j < mazeSize; j++)
+        {
+            int iDist = abs(pos->row - i);
+            int jDist = abs(pos->col - j);
+
+            if (iDist <= 1 && jDist <= 1)
+            {
+                // Mantém valores próximos ao jogador
                 newMaze[i][j] = mazeInitial[i][j];
-            } if (j == pos->col && i == pos->row) {
+            }
+            else if (i == pos->row && j == pos->col)
+            {
+                // Marca a posição do jogador com 5
                 newMaze[i][j] = 5;
-            }else {
-                newMaze[i][j] == 4;
+            }
+            else
+            {
+                // Áreas desconhecidas marcadas como 4
+                newMaze[i][j] = 4;
+            }
+            if (mazeInitial[i][j] == 3)
+            {
+                exit->row = i;
+                exit->col = j;
             }
         }
+    }
+
+    return newMaze;
+}
+
+int isFreePath(int value)
+{
+    int res = 0;
+
+    switch (value)
+    {
+    case 1:
+    case 2:
+    case 3:
+        res = 1;
+        break;
+
+    default:
+        res = 0;
+        break;
+    }
+    return res;
+}
+
+void getPossibleMoves(int **maze, PlayerPos pos, int moves[MAXMOVES], int mazeSize)
+{
+    int i = 0;
+    while (i < MAXMOVES)
+    {
+        moves[i] = 0;
+        i++;
+    }
+    i = 0;
+    if (pos.row > 0 && isFreePath(maze[pos.row - 1][pos.col]) == 1)
+    {
+        moves[i] = 1;
+        i++;
+    }
+    if (pos.col < mazeSize - 1 && isFreePath(maze[pos.row][pos.col + 1]) == 1)
+    {
+        moves[i] = 2;
+        i++;
+    }
+    if (pos.row < mazeSize - 1 && isFreePath(maze[pos.row + 1][pos.col]) == 1)
+    {
+        moves[i] = 3;
+        i++;
+    }
+    if (pos.col > 0 && isFreePath(maze[pos.row][pos.col - 1]) == 1)
+    {
+        moves[i] = 4;
+        i++;
     }
 }
 
-void printMatrix(int size, int **matrix) {
-    for (int i = 0; i < size; i++) {
-        for (int j = 0; j < size; j++) {
-            printf("%d ", matrix[i][j]); // Imprime cada elemento com um espaço
+void copyMap (int** original, int copy[MAXMAZESIZE][MAXMAZESIZE], int mazeSize) {
+    for (int i = 0; i < mazeSize; i++)
+    {
+        for (int j = 0; j < mazeSize; j++)
+        {
+            copy[i][j] = original[i][j];
         }
-        printf("\n"); // Nova linha após cada linha da matriz
     }
+
+}
+
+int updateGame(int **updatedMaze, int **initialMaze, PlayerPos *pos, PlayerPos exit, int movement, int mazeSize)
+{
+    updatedMaze[pos->row][pos->col] = initialMaze[pos->row][pos->col];
+
+    switch (movement)
+    {
+    case 1:
+        pos->row--;
+        break;
+    case 2:
+        pos->col++;
+        break;
+    case 3:
+        pos->row++;
+        break;
+    case 4:
+        pos->col--;
+        break;
+
+    default:
+        break;
+    }
+    // update player position
+    updatedMaze[pos->row][pos->col] = 5;
+
+    // update maze
+    if (pos->row > 0)
+        updatedMaze[pos->row - 1][pos->col] = initialMaze[pos->row - 1][pos->col];
+    if (pos->row > 0 && pos->col > 0)
+        updatedMaze[pos->row - 1][pos->col - 1] = initialMaze[pos->row - 1][pos->col - 1];
+    if (pos->col > 0)
+        updatedMaze[pos->row][pos->col - 1] = initialMaze[pos->row][pos->col - 1];
+    if (pos->col > 0 && pos->row < mazeSize - 1)
+        updatedMaze[pos->row + 1][pos->col - 1] = initialMaze[pos->row + 1][pos->col - 1];
+    if (pos->row < mazeSize - 1)
+        updatedMaze[pos->row + 1][pos->col] = initialMaze[pos->row + 1][pos->col];
+    if (pos->col < mazeSize - 1 && pos->row < mazeSize - 1)
+        updatedMaze[pos->row + 1][pos->col + 1] = initialMaze[pos->row + 1][pos->col + 1];
+    if (pos->col < mazeSize - 1)
+        updatedMaze[pos->row][pos->col + 1] = initialMaze[pos->row][pos->col + 1];
+    if (pos->row > 0 && pos->col < mazeSize - 1)
+        updatedMaze[pos->row - 1][pos->col + 1] = initialMaze[pos->row - 1][pos->col + 1];
+
+    if (pos->row == exit.row && pos->col == exit.col)
+        return 1;
+    return 0;
 }
 
 void handleGame(int clntSocket, const char *filename)
@@ -140,8 +256,8 @@ void handleGame(int clntSocket, const char *filename)
     char response[BUFSIZE + 20]; // Buffer para resposta (com prefixo)
     Action msgRecv, msgToSend;
     int **mazeInitial, **mazeUpdated, mazeSize, hasStarted = 0;
-    ssize_t numBytesRcvd;
-    PlayerPos player;
+    ssize_t numBytesRcvd, numBytesSent;
+    PlayerPos player, exit;
 
     for (;;)
     {
@@ -151,26 +267,36 @@ void handleGame(int clntSocket, const char *filename)
         {
             switch (msgRecv.type)
             {
-            case 0:
+            case 0: // handle command "start"
                 if (hasStarted > 0)
                     break;
                 hasStarted = 1;
                 mazeInitial = getMazeFromFile(filename, &mazeSize);
                 if (mazeInitial == NULL)
                     DieWithUserMessage("Maze not found", "Unable to load maze from file");
-                
-                mazeUpdated = getInitialUpdatedMaze(mazeInitial, mazeSize, &player);
-                for (int i = 0; i < mazeSize; i++) {
-                    for (int j = 0; j < mazeSize; j++) {
-                        printf("%d ", mazeUpdated[i][j]); // Imprime cada elemento com um espaço
-                    }
-                    printf("\n"); // Nova linha após cada linha da matriz
-                }
-                printf("starting new game\n");
 
+                mazeUpdated = getInitialUpdatedMaze(mazeInitial, mazeSize, &player, &exit);
+                printf("starting new game\n");
+                msgToSend.type = 4;
+                getPossibleMoves(mazeUpdated, player, msgToSend.moves, mazeSize);
+
+                numBytesSent = send(clntSocket, &msgToSend, sizeof(msgToSend), 0);
                 break;
             case 1:
-                
+                if (hasStarted == 0)
+                    break;
+
+                if (updateGame(mazeUpdated, mazeInitial, &player, exit, msgRecv.moves[0], mazeSize) != 1)
+                {
+                    msgToSend.type = 4;
+                    getPossibleMoves(mazeUpdated, player, msgToSend.moves, mazeSize);
+                }else {
+                    msgToSend.type = 5;
+                    copyMap(mazeInitial,msgToSend.board,mazeSize);
+
+                }
+
+                numBytesSent = send(clntSocket, &msgToSend, sizeof(msgToSend), 0);
                 break;
 
             default:
