@@ -29,7 +29,8 @@ int main(int argc, char *argv[])
 
     servPort = atoi(argv[2]); // Second arg: local port
 
-    if (domain == AF_INET) {
+    if (domain == AF_INET)
+    {
         // Construct local address structure for IPv4
         struct sockaddr_in servAddr;
         memset(&servAddr, 0, sizeof(servAddr));       // Zero out structure
@@ -40,13 +41,15 @@ int main(int argc, char *argv[])
         // Bind to the local address
         if (bind(servSock, (struct sockaddr *)&servAddr, sizeof(servAddr)) < 0)
             DieWithSystemMessage("bind() failed");
-    } else if (domain == AF_INET6) {
+    }
+    else if (domain == AF_INET6)
+    {
         // Construct local address structure for IPv6
         struct sockaddr_in6 servAddr6;
-        memset(&servAddr6, 0, sizeof(servAddr6));         // Zero out structure
-        servAddr6.sin6_family = domain;                  // IPv6 address family
-        servAddr6.sin6_addr = in6addr_any;               // Any incoming interface
-        servAddr6.sin6_port = htons(servPort);           // Local port
+        memset(&servAddr6, 0, sizeof(servAddr6)); // Zero out structure
+        servAddr6.sin6_family = domain;           // IPv6 address family
+        servAddr6.sin6_addr = in6addr_any;        // Any incoming interface
+        servAddr6.sin6_port = htons(servPort);    // Local port
 
         // Bind to the local address
         if (bind(servSock, (struct sockaddr *)&servAddr6, sizeof(servAddr6)) < 0)
@@ -57,8 +60,8 @@ int main(int argc, char *argv[])
     if (listen(servSock, 1) < 0)
         DieWithSystemMessage("listen() failed");
 
-
-    for(;;) {
+    for (;;)
+    {
         struct sockaddr_in clntAddr; // Client address
         // Set length of client address structure (in-out parameter)
         socklen_t clntAddrLen = sizeof(clntAddr);
@@ -80,6 +83,6 @@ int main(int argc, char *argv[])
         close(clntSock);
         printf("client disconnected\n");
     }
-    
+
     return 0;
 }

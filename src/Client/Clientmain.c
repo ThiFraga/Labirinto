@@ -75,13 +75,15 @@ int main(int argc, char *argv[])
         {
             printf("error: start the game first\n");
         }
-        else if(messageToSend.type == 1 && isValidMovement(messageToSend.moves[0],messageRecv.moves) == 0){
-                printf("error: you cannot go this way\n");
-        }else {
+        else if (messageToSend.type == 1 && isValidMovement(messageToSend.moves[0], messageRecv.moves) == 0)
+        {
+            printf("error: you cannot go this way\n");
+        }
+        else
+        {
             if (messageToSend.type == 0)
                 started = 1;
 
-            
             ssize_t numBytes = send(sock, &messageToSend, sizeof(messageToSend), 0);
 
             numBytesRecv = recv(sock, &messageRecv, sizeof(action), 0);
@@ -89,7 +91,7 @@ int main(int argc, char *argv[])
             {
                 switch (messageRecv.type)
                 {
-                case 4: //handle update
+                case 4: // handle update
                     switch (messageToSend.type)
                     {
                     case 0: // case started, moved or reseted
@@ -99,10 +101,13 @@ int main(int argc, char *argv[])
                         break;
                     case 2: // case asked for a map
                         printMap(messageRecv.board);
-
+                        break;
+                    case 3:
+                        printHint(messageRecv.moves);
                     default:
                         break;
                     }
+
                     break;
                 case 5: // handle win
                     printf("You escaped!\n");
@@ -114,8 +119,8 @@ int main(int argc, char *argv[])
                 }
             }
         }
-        if(messageToSend.type == 7) break;
-
+        if (messageToSend.type == 7)
+            break;
     }
 
     close(sock);

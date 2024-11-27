@@ -6,15 +6,18 @@
 
 #define MAXMOVENAMESIZE 10 // Tamanho máximo de um nome de movimento
 
-void cleanInput(char *str) {
+void cleanInput(char *str)
+{
     char *end;
 
     // Remove espaços no início
-    while (isspace((unsigned char)*str)) str++;
+    while (isspace((unsigned char)*str))
+        str++;
 
     // Remove espaços no final
     end = str + strlen(str) - 1;
-    while (end > str && isspace((unsigned char)*end)) end--;
+    while (end > str && isspace((unsigned char)*end))
+        end--;
 
     // Adiciona o terminador nulo
     *(end + 1) = '\0';
@@ -34,25 +37,21 @@ action getMessage(char *msg)
     {
         newMessage.type = 1;
         newMessage.moves[0] = 1;
-
     }
     else if (strcmp(msg, "right") == 0)
     {
         newMessage.type = 1;
         newMessage.moves[0] = 2;
-
     }
     else if (strcmp(msg, "down") == 0)
     {
         newMessage.type = 1;
         newMessage.moves[0] = 3;
-
     }
     else if (strcmp(msg, "left") == 0)
     {
         newMessage.type = 1;
         newMessage.moves[0] = 4;
-
     }
     else if (strcmp(msg, "map") == 0)
     {
@@ -70,6 +69,10 @@ action getMessage(char *msg)
     {
         newMessage.type = 7;
     }
+    else if (strcmp(msg, "hint") == 0)
+    {
+        newMessage.type = 3;
+    }
     else
     {
         newMessage.type = 10;
@@ -77,8 +80,8 @@ action getMessage(char *msg)
     return newMessage;
 }
 
-
-void getMoveName(char *move, int value) {
+void getMoveName(char *move, int value)
+{
     switch (value)
     {
     case 1:
@@ -99,22 +102,44 @@ void getMoveName(char *move, int value) {
     }
 }
 
-void printPossibleMoves(int moves[]) {
+void printPossibleMoves(int moves[])
+{
     int i = 0;
     char moveName[MAXMOVENAMESIZE];
 
     fputs("Possible moves: ", stdout);
 
-    while (moves[i] != 0) { // Verifica se ainda há movimentos
+    while (moves[i] != 0 && i < MAXMOVES)
+    {                                    // Verifica se ainda há movimentos
         getMoveName(moveName, moves[i]); // Obtém o nome do movimento
-        if (i != 0) fputs(", ", stdout); // Adiciona vírgula após o primeiro movimento
+        if (i != 0)
+            fputs(", ", stdout); // Adiciona vírgula após o primeiro movimento
         fputs(moveName, stdout); // Imprime o nome do movimento
         i++;
     }
     fputs(".\n", stdout);
 }
 
-char* getCharEquivalent(int value) {
+void printHint(int moves[])
+{
+    int i = 0;
+    char moveName[MAXMOVENAMESIZE];
+
+    fputs("Hint: ", stdout);
+
+    while (moves[i] != 0 && i < MAXMOVES)
+    {                                    // Verifica se ainda há movimentos
+        getMoveName(moveName, moves[i]); // Obtém o nome do movimento
+        if (i != 0)
+            fputs(", ", stdout); // Adiciona vírgula após o primeiro movimento
+        fputs(moveName, stdout); // Imprime o nome do movimento
+        i++;
+    }
+    fputs(".\n", stdout);
+}
+
+char *getCharEquivalent(int value)
+{
     char *res;
     switch (value)
     {
@@ -136,7 +161,7 @@ char* getCharEquivalent(int value) {
     case 5:
         res = "+";
         break;
-    
+
     default:
         res = "@";
         break;
@@ -144,22 +169,30 @@ char* getCharEquivalent(int value) {
     return res;
 }
 
-void printMap(int maze[MAXMAZESIZE][MAXMAZESIZE]) {
+void printMap(int maze[MAXMAZESIZE][MAXMAZESIZE])
+{
     char *c, *first;
-    for(int i = 0; i < MAXMAZESIZE; i++) {
+    for (int i = 0; i < MAXMAZESIZE; i++)
+    {
         first = getCharEquivalent(maze[i][0]);
-        for(int j = 0; j < MAXMAZESIZE; j++){
+        for (int j = 0; j < MAXMAZESIZE; j++)
+        {
             c = getCharEquivalent(maze[i][j]);
-            if(strcmp(c,"@")!=0) printf("%s\t",c);
+            if (strcmp(c, "@") != 0)
+                printf("%s\t", c);
         }
-        if(strcmp(first,"@")!=0) printf("\n");
+        if (strcmp(first, "@") != 0)
+            printf("\n");
     }
 }
 
-int isValidMovement(int movement, int possibleMoves[MAXMOVES]) {
+int isValidMovement(int movement, int possibleMoves[MAXMOVES])
+{
     int res = 0;
-    for(int i = 0; i < MAXMOVES; i++) {
-        if(possibleMoves[i] == movement) {
+    for (int i = 0; i < MAXMOVES; i++)
+    {
+        if (possibleMoves[i] == movement)
+        {
             res = 1;
             break;
         }

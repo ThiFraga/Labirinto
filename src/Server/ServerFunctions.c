@@ -10,6 +10,9 @@
 #define MAX_SIZE 10 // Tamanho máximo da matriz
 #define BUFSIZE 512 // Tamanho máximo do buffer
 
+int dx[4] = {0, 1, 0, -1};
+int dy[4] = {-1, 0, 1, 0};
+
 int identifyIPVersion(const char *vrs)
 {
     if (strcmp(vrs, "v4") == 0)
@@ -200,6 +203,77 @@ void copyMap(int **original, int copy[MAXMAZESIZE][MAXMAZESIZE], int mazeSize)
     }
 }
 
+int dfs(int **maze, int **visited, int mazeSize, PlayerPos pos, PlayerPos exit, int path[], int *index)
+{
+    PlayerPos newPos;
+
+    if (pos.row == exit.row && pos.col == exit.col)
+        return 1;
+    if (*index >= MAXMOVES)
+        return 0;
+
+    visited[pos.row][pos.col] = -1;
+
+    for (int i = 0; i < 4; i++)
+    {
+        newPos.row = pos.row + dy[i];
+        newPos.col = pos.col + dx[i];
+
+        if (newPos.row >= 0 && newPos.row < mazeSize && newPos.col >= 0 && newPos.col < mazeSize &&
+            maze[newPos.row][newPos.col] != 0 && visited[newPos.row][newPos.col] == 0)
+        {
+
+            path[*index] = i + 1; // Salva o movimento
+            (*index)++;
+
+            if (dfs(maze, visited, mazeSize, newPos, exit, path, index) == 1)
+                return 1;
+
+            (*index)--; // Retrocede se não encontrar solução
+        }
+    }
+
+    visited[pos.row][pos.col] = 0; // Restaura a posição para outras tentativas
+    return 0;
+}
+
+void getHintMoves(int **maze, int moves[], int mazeSize, PlayerPos pos, PlayerPos exit)
+{
+    int path[MAXMOVES] = {0};
+    int **visited;
+    int index = 0;
+
+    visited = (int **)malloc(mazeSize * sizeof(int *));
+    for (int i = 0; i < mazeSize; i++)
+    {
+        visited[i] = (int *)malloc(mazeSize * sizeof(int));
+    }
+
+    // Inicializa a matriz `visited` com zeros
+    for (int i = 0; i < mazeSize; i++)
+    {
+        for (int j = 0; j < mazeSize; j++)
+        {
+            visited[i][j] = 0;
+        }
+    }
+
+    // Chama o DFS para encontrar o caminho
+    dfs(maze, visited, mazeSize, pos, exit, path, &index);
+
+    // Copia os valores encontrados para `moves`
+    for (int i = 0; i < index; i++)
+    {
+        moves[i] = path[i];
+    }
+
+    for (int i = 0; i < mazeSize; i++)
+    {
+        free(visited[i]);
+    }
+    free(visited);
+}
+
 int updateGame(int **updatedMaze, int **initialMaze, PlayerPos *pos, PlayerPos exit, int movement, int mazeSize)
 {
     updatedMaze[pos->row][pos->col] = initialMaze[pos->row][pos->col];
@@ -305,16 +379,22 @@ void handleGame(int clntSocket, const char *filename)
                 copyMap(mazeUpdated, msgToSend.board, mazeSize);
                 numBytesSent = send(clntSocket, &msgToSend, sizeof(msgToSend), 0);
                 break;
-            
+            case 3: // handle command "hint"
+                msgToSend.type = 4;
+                getHintMoves(mazeInitial, msgToSend.moves, mazeSize, player, exit);
+                numBytesSent = send(clntSocket, &msgToSend, sizeof(msgToSend), 0);
+                break;
+
             case 7:
                 hasExited = 1;
                 break;
-             
+
             default:
                 break;
             }
         }
-        if(hasExited == 1) break;
+        if (hasExited == 1)
+            break;
     }
     // Liberar memória alocada
     for (int i = 0; i < mazeSize; i++)
@@ -324,5 +404,4 @@ void handleGame(int clntSocket, const char *filename)
     }
     free(mazeInitial);
     free(mazeUpdated);
-
 }

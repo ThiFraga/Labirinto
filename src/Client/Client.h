@@ -15,10 +15,11 @@ typedef struct
 void DieWithUserMessage(const char *msg, const char *detail);
 void DieWithSystemMessage(const char *msg);
 void cleanInput(char *str);
-action getMessage(char* msg);
+action getMessage(char *msg);
 void printPossibleMoves(int moves[]);
-char* getCharEquivalent(int value);
+char *getCharEquivalent(int value);
 void printMap(int maze[MAXMAZESIZE][MAXMAZESIZE]);
 int isValidMovement(int movement, int possibleMoves[MAXMOVES]);
+void printHint(int moves[]);
 
 #endif
