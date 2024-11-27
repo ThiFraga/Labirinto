@@ -324,8 +324,6 @@ int updateGame(int **updatedMaze, int **initialMaze, PlayerPos *pos, PlayerPos e
 
 void handleGame(int clntSocket, const char *filename)
 {
-    char buffer[BUFSIZE];        // Buffer for mensagem recebida
-    char response[BUFSIZE + 20]; // Buffer para resposta (com prefixo)
     Action msgRecv, msgToSend;
     int **mazeInitial, **mazeUpdated, mazeSize, hasStarted = 0, hasExited = 0;
     ssize_t numBytesRcvd, numBytesSent;
@@ -344,9 +342,10 @@ void handleGame(int clntSocket, const char *filename)
                     break;
                 hasStarted = 1;
                 mazeInitial = getMazeFromFile(filename, &mazeSize);
-                if (mazeInitial == NULL)
+                if (mazeInitial == NULL){
                     DieWithUserMessage("Maze not found", "Unable to load maze from file");
-
+                }
+                // fall through
             case 6: // handle command "reset" and final part of command "start"
                 mazeUpdated = getInitialUpdatedMaze(mazeInitial, mazeSize, &player, &exit);
                 printf("starting new game\n");
@@ -354,6 +353,8 @@ void handleGame(int clntSocket, const char *filename)
                 getPossibleMoves(mazeUpdated, player, msgToSend.moves, mazeSize);
 
                 numBytesSent = send(clntSocket, &msgToSend, sizeof(msgToSend), 0);
+                if (numBytesSent < 0)
+                    DieWithSystemMessage("send() failed");
                 break;
 
             case 1: // handle command "move"
@@ -372,17 +373,23 @@ void handleGame(int clntSocket, const char *filename)
                 }
 
                 numBytesSent = send(clntSocket, &msgToSend, sizeof(msgToSend), 0);
+                if (numBytesSent < 0)
+                    DieWithSystemMessage("send() failed");
                 break;
 
             case 2: // handle command "map"
                 msgToSend.type = 4;
                 copyMap(mazeUpdated, msgToSend.board, mazeSize);
                 numBytesSent = send(clntSocket, &msgToSend, sizeof(msgToSend), 0);
+                if (numBytesSent < 0)
+                    DieWithSystemMessage("send() failed");
                 break;
             case 3: // handle command "hint"
                 msgToSend.type = 4;
                 getHintMoves(mazeInitial, msgToSend.moves, mazeSize, player, exit);
                 numBytesSent = send(clntSocket, &msgToSend, sizeof(msgToSend), 0);
+                if (numBytesSent < 0)
+                    DieWithSystemMessage("send() failed");
                 break;
 
             case 7:
