@@ -138,18 +138,31 @@ char* getCharEquivalent(int value) {
         break;
     
     default:
-        res = "";
+        res = "@";
         break;
     }
     return res;
 }
 
 void printMap(int maze[MAXMAZESIZE][MAXMAZESIZE]) {
+    char *c, *first;
     for(int i = 0; i < MAXMAZESIZE; i++) {
+        first = getCharEquivalent(maze[i][0]);
         for(int j = 0; j < MAXMAZESIZE; j++){
-            printf("%s ",getCharEquivalent(maze[i][j]));
+            c = getCharEquivalent(maze[i][j]);
+            if(strcmp(c,"@")!=0) printf("%s\t",c);
         }
-        printf("\n");
+        if(strcmp(first,"@")!=0) printf("\n");
     }
-    printf("\n");
+}
+
+int isValidMovement(int movement, int possibleMoves[MAXMOVES]) {
+    int res = 0;
+    for(int i = 0; i < MAXMOVES; i++) {
+        if(possibleMoves[i] == movement) {
+            res = 1;
+            break;
+        }
+    }
+    return res;
 }

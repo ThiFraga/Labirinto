@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
 
         messageToSend = getMessage(input);
 
-        // TRATAMENTO DE ERROS
+        // error treatment
         if (messageToSend.type == 10)
         {
             printf("error: command not found\n");
@@ -75,35 +75,49 @@ int main(int argc, char *argv[])
         {
             printf("error: start the game first\n");
         }
-        else
-        {
-            // TODO: Erro movimento inválido
+        else if(messageToSend.type == 1 && isValidMovement(messageToSend.moves[0],messageRecv.moves) == 0){
+                printf("error: you cannot go this way\n");
+        }else {
             if (messageToSend.type == 0)
                 started = 1;
 
-            ssize_t numBytes = send(sock, &messageToSend, sizeof(messageToSend), 0);
-        }
-
-        numBytesRecv = recv(sock, &messageRecv, sizeof(action), 0);
-        if (numBytesRecv > 0)
-        {
-            if (messageRecv.type == 4)
-            {
-                if (messageToSend.type == 1 || messageToSend.type == 0)
-                {
-                    printPossibleMoves(messageRecv.moves);
-                }
-                if(messageToSend.type == 2) {
-                    printMap(messageRecv.board);
-                }
-            }
-            if(messageRecv.type == 5)
-            {
-                printf("You escaped!\n");
-                printMap(messageRecv.board);
-            }
             
+            ssize_t numBytes = send(sock, &messageToSend, sizeof(messageToSend), 0);
+
+            numBytesRecv = recv(sock, &messageRecv, sizeof(action), 0);
+            if (numBytesRecv > 0)
+            {
+                switch (messageRecv.type)
+                {
+                case 4: //handle update
+                    switch (messageToSend.type)
+                    {
+                    case 0: // case started, moved or reseted
+                    case 1:
+                    case 6:
+                        printPossibleMoves(messageRecv.moves);
+                        break;
+                    case 2: // case asked for a map
+                        printMap(messageRecv.board);
+
+                    default:
+                        break;
+                    }
+                    break;
+                case 5: // handle win
+                    printf("You escaped!\n");
+                    printMap(messageRecv.board);
+                    break;
+
+                default:
+                    break;
+                }
+            }
         }
+        if(messageToSend.type == 7) break;
+
     }
+
+    close(sock);
     return 0;
 }

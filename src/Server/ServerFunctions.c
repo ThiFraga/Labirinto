@@ -120,11 +120,6 @@ int **getInitialUpdatedMaze(int **mazeInitial, int mazeSize, PlayerPos *pos, Pla
                 // Mantém valores próximos ao jogador
                 newMaze[i][j] = mazeInitial[i][j];
             }
-            else if (i == pos->row && j == pos->col)
-            {
-                // Marca a posição do jogador com 5
-                newMaze[i][j] = 5;
-            }
             else
             {
                 // Áreas desconhecidas marcadas como 4
@@ -137,7 +132,7 @@ int **getInitialUpdatedMaze(int **mazeInitial, int mazeSize, PlayerPos *pos, Pla
             }
         }
     }
-
+    newMaze[pos->row][pos->col] = 5;
     return newMaze;
 }
 
@@ -191,15 +186,18 @@ void getPossibleMoves(int **maze, PlayerPos pos, int moves[MAXMOVES], int mazeSi
     }
 }
 
-void copyMap (int** original, int copy[MAXMAZESIZE][MAXMAZESIZE], int mazeSize) {
-    for (int i = 0; i < mazeSize; i++)
+void copyMap(int **original, int copy[MAXMAZESIZE][MAXMAZESIZE], int mazeSize)
+{
+    for (int i = 0; i < MAXMAZESIZE; i++)
     {
-        for (int j = 0; j < mazeSize; j++)
+        for (int j = 0; j < MAXMAZESIZE; j++)
         {
-            copy[i][j] = original[i][j];
+            if (i < mazeSize && j < mazeSize)
+                copy[i][j] = original[i][j];
+            else
+                copy[i][j] = 9;
         }
     }
-
 }
 
 int updateGame(int **updatedMaze, int **initialMaze, PlayerPos *pos, PlayerPos exit, int movement, int mazeSize)
@@ -255,7 +253,7 @@ void handleGame(int clntSocket, const char *filename)
     char buffer[BUFSIZE];        // Buffer for mensagem recebida
     char response[BUFSIZE + 20]; // Buffer para resposta (com prefixo)
     Action msgRecv, msgToSend;
-    int **mazeInitial, **mazeUpdated, mazeSize, hasStarted = 0;
+    int **mazeInitial, **mazeUpdated, mazeSize, hasStarted = 0, hasExited = 0;
     ssize_t numBytesRcvd, numBytesSent;
     PlayerPos player, exit;
 
@@ -275,6 +273,7 @@ void handleGame(int clntSocket, const char *filename)
                 if (mazeInitial == NULL)
                     DieWithUserMessage("Maze not found", "Unable to load maze from file");
 
+            case 6: // handle command "reset" and final part of command "start"
                 mazeUpdated = getInitialUpdatedMaze(mazeInitial, mazeSize, &player, &exit);
                 printf("starting new game\n");
                 msgToSend.type = 4;
@@ -282,7 +281,8 @@ void handleGame(int clntSocket, const char *filename)
 
                 numBytesSent = send(clntSocket, &msgToSend, sizeof(msgToSend), 0);
                 break;
-            case 1:
+
+            case 1: // handle command "move"
                 if (hasStarted == 0)
                     break;
 
@@ -290,25 +290,39 @@ void handleGame(int clntSocket, const char *filename)
                 {
                     msgToSend.type = 4;
                     getPossibleMoves(mazeUpdated, player, msgToSend.moves, mazeSize);
-                }else {
+                }
+                else
+                {
                     msgToSend.type = 5;
-                    copyMap(mazeInitial,msgToSend.board,mazeSize);
-
+                    copyMap(mazeInitial, msgToSend.board, mazeSize);
                 }
 
                 numBytesSent = send(clntSocket, &msgToSend, sizeof(msgToSend), 0);
                 break;
 
+            case 2: // handle command "map"
+                msgToSend.type = 4;
+                copyMap(mazeUpdated, msgToSend.board, mazeSize);
+                numBytesSent = send(clntSocket, &msgToSend, sizeof(msgToSend), 0);
+                break;
+            
+            case 7:
+                hasExited = 1;
+                break;
+             
             default:
                 break;
             }
         }
+        if(hasExited == 1) break;
     }
-
     // Liberar memória alocada
     for (int i = 0; i < mazeSize; i++)
     {
         free(mazeInitial[i]);
+        free(mazeUpdated[i]);
     }
     free(mazeInitial);
+    free(mazeUpdated);
+
 }

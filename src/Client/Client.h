@@ -19,5 +19,6 @@ action getMessage(char* msg);
 void printPossibleMoves(int moves[]);
 char* getCharEquivalent(int value);
 void printMap(int maze[MAXMAZESIZE][MAXMAZESIZE]);
+int isValidMovement(int movement, int possibleMoves[MAXMOVES]);
 
 #endif

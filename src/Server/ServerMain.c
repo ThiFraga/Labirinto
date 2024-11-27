@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -74,10 +75,11 @@ int main(int argc, char *argv[])
             printf("client connected\n");
         else
             puts("Unable to get client address");
+
         handleGame(clntSock, argv[4]);
+        close(clntSock);
+        printf("client disconnected\n");
     }
     
-
-    printf("fim");
     return 0;
 }
