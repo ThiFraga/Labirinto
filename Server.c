@@ -1,15 +1,13 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include "Server.h"
+#include "Common.h"
 
-#define MAX_SIZE 10 // Tamanho máximo da matriz
-#define BUFSIZE 512 // Tamanho máximo do buffer
+/* Summary
+    Server Functions line 8
+    Main Functions line 206
+*/
 
+// Server Functions
+
+// Global variable for moves on hint
 int dx[4] = {0, 1, 0, -1};
 int dy[4] = {-1, 0, 1, 0};
 
@@ -90,14 +88,13 @@ int **getInitialUpdatedMaze(int **mazeInitial, int mazeSize, PlayerPos *pos, Pla
 {
     int i, j;
 
-    // Alocação dinâmica para nova matriz
     int **newMaze = (int **)malloc(mazeSize * sizeof(int *));
     for (i = 0; i < mazeSize; i++)
     {
         newMaze[i] = (int *)malloc(mazeSize * sizeof(int));
     }
 
-    // Encontrar a posição inicial do jogador (valor 2 na matriz)
+    // Find player initial position
     for (i = 0; i < mazeSize; i++)
     {
         for (j = 0; j < mazeSize; j++)
@@ -110,7 +107,7 @@ int **getInitialUpdatedMaze(int **mazeInitial, int mazeSize, PlayerPos *pos, Pla
         }
     }
 
-    // Atualizar a nova matriz com base na posição inicial do jogador
+    // update matrix arround player poisition
     for (i = 0; i < mazeSize; i++)
     {
         for (j = 0; j < mazeSize; j++)
@@ -120,12 +117,11 @@ int **getInitialUpdatedMaze(int **mazeInitial, int mazeSize, PlayerPos *pos, Pla
 
             if (iDist <= 1 && jDist <= 1)
             {
-                // Mantém valores próximos ao jogador
                 newMaze[i][j] = mazeInitial[i][j];
             }
             else
             {
-                // Áreas desconhecidas marcadas como 4
+                // Unknown areas
                 newMaze[i][j] = 4;
             }
             if (mazeInitial[i][j] == 3)
@@ -203,18 +199,19 @@ void copyMap(int **original, int copy[MAXMAZESIZE][MAXMAZESIZE], int mazeSize)
     }
 }
 
+// Depth-firs Search algorithm
 int dfs(int **maze, int **visited, int mazeSize, PlayerPos pos, PlayerPos exit, int path[], int *index)
 {
-    PlayerPos newPos;
+    PlayerPos newPos; // new player position
 
     if (pos.row == exit.row && pos.col == exit.col)
-        return 1;
+        return 1; // if its the exit return 1
     if (*index >= MAXMOVES)
-        return 0;
+        return 0; // return 0 if exit was not found
 
     visited[pos.row][pos.col] = -1;
 
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < 4; i++) // for each possible movement
     {
         newPos.row = pos.row + dy[i];
         newPos.col = pos.col + dx[i];
@@ -223,17 +220,17 @@ int dfs(int **maze, int **visited, int mazeSize, PlayerPos pos, PlayerPos exit, 
             maze[newPos.row][newPos.col] != 0 && visited[newPos.row][newPos.col] == 0)
         {
 
-            path[*index] = i + 1; // Salva o movimento
+            path[*index] = i + 1; // Save movement
             (*index)++;
 
             if (dfs(maze, visited, mazeSize, newPos, exit, path, index) == 1)
                 return 1;
 
-            (*index)--; // Retrocede se não encontrar solução
+            (*index)--; // Go back if has no solution
         }
     }
 
-    visited[pos.row][pos.col] = 0; // Restaura a posição para outras tentativas
+    visited[pos.row][pos.col] = 0; // Restart position for new attempts
     return 0;
 }
 
@@ -249,7 +246,7 @@ void getHintMoves(int **maze, int moves[], int mazeSize, PlayerPos pos, PlayerPo
         visited[i] = (int *)malloc(mazeSize * sizeof(int));
     }
 
-    // Inicializa a matriz `visited` com zeros
+    // Initialize the matrix `visited` with zeros
     for (int i = 0; i < mazeSize; i++)
     {
         for (int j = 0; j < mazeSize; j++)
@@ -258,10 +255,10 @@ void getHintMoves(int **maze, int moves[], int mazeSize, PlayerPos pos, PlayerPo
         }
     }
 
-    // Chama o DFS para encontrar o caminho
+    // Call the DFS to find the path
     dfs(maze, visited, mazeSize, pos, exit, path, &index);
 
-    // Copia os valores encontrados para `moves`
+    // Copy values to moves vector
     for (int i = 0; i < index; i++)
     {
         moves[i] = path[i];
@@ -411,4 +408,83 @@ void handleGame(int clntSocket, const char *filename)
     }
     free(mazeInitial);
     free(mazeUpdated);
+}
+
+int main(int argc, char *argv[])
+{
+    in_port_t servPort;
+
+    // Check if the number of arguments is sufficient
+    if (argc < 5)
+        DieWithUserMessage("Parameters", "<IP Version> <Server Port> -i <maze file>");
+
+    int ipParameter = identifyIPVersion(argv[1]); // Check if IPv4, IPv6, or invalid
+    if (ipParameter == 0)
+        DieWithUserMessage("Parameter", "<IP Version> invalid!");
+
+    int domain = (ipParameter == 1) ? AF_INET : AF_INET6;
+
+    // Create socket for incoming connections
+    int servSock; // Socket descriptor for server
+    if ((servSock = socket(domain, SOCK_STREAM, IPPROTO_TCP)) < 0)
+        DieWithSystemMessage("socket() failed");
+
+    servPort = atoi(argv[2]); // Second arg: local port
+
+    if (domain == AF_INET)
+    {
+        // Construct local address structure for IPv4
+        struct sockaddr_in servAddr;
+        memset(&servAddr, 0, sizeof(servAddr));       // Zero out structure
+        servAddr.sin_family = domain;                 // IPv4 address family
+        servAddr.sin_addr.s_addr = htonl(INADDR_ANY); // Any incoming interface
+        servAddr.sin_port = htons(servPort);          // Local port
+
+        // Bind to the local address
+        if (bind(servSock, (struct sockaddr *)&servAddr, sizeof(servAddr)) < 0)
+            DieWithSystemMessage("bind() failed");
+    }
+    else if (domain == AF_INET6)
+    {
+        // Construct local address structure for IPv6
+        struct sockaddr_in6 servAddr6;
+        memset(&servAddr6, 0, sizeof(servAddr6)); // Zero out structure
+        servAddr6.sin6_family = domain;           // IPv6 address family
+        servAddr6.sin6_addr = in6addr_any;        // Any incoming interface
+        servAddr6.sin6_port = htons(servPort);    // Local port
+
+        // Bind to the local address
+        if (bind(servSock, (struct sockaddr *)&servAddr6, sizeof(servAddr6)) < 0)
+            DieWithSystemMessage("bind() failed");
+    }
+
+    // Mark the socket so it will listen for incoming connections
+    if (listen(servSock, 1) < 0)
+        DieWithSystemMessage("listen() failed");
+
+    for (;;)
+    {
+        struct sockaddr_in clntAddr; // Client address
+        // Set length of client address structure (in-out parameter)
+        socklen_t clntAddrLen = sizeof(clntAddr);
+
+        // Wait for a client to connect
+        int clntSock = accept(servSock, (struct sockaddr *)&clntAddr, &clntAddrLen);
+        if (clntSock < 0)
+            DieWithSystemMessage("accept() failed");
+
+        // clntSock is connected to a client!
+
+        char clntName[INET_ADDRSTRLEN]; // String to contain client address
+        if (inet_ntop(AF_INET, &clntAddr.sin_addr.s_addr, clntName, sizeof(clntName)) != NULL)
+            printf("client connected\n");
+        else
+            puts("Unable to get client address");
+
+        handleGame(clntSock, argv[4]);
+        close(clntSock);
+        printf("client disconnected\n");
+    }
+
+    return 0;
 }

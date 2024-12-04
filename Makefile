@@ -1,10 +1,5 @@
 # Diretórios
-SRC_DIR = ./src
 BIN_DIR = ./bin
-
-# Diretórios específicos
-CLIENT_DIR = $(SRC_DIR)/Client
-SERVER_DIR = $(SRC_DIR)/Server
 
 # Compilador e flags
 CC = gcc
@@ -16,11 +11,11 @@ CLIENT_BIN = $(BIN_DIR)/client
 SERVER_BIN = $(BIN_DIR)/server
 
 # Fontes e objetos do Client
-CLIENT_SOURCES = $(CLIENT_DIR)/Clientmain.c $(CLIENT_DIR)/ClientFunctions.c $(CLIENT_DIR)/dieWithMessage.c
+CLIENT_SOURCES = ./Client.c ./dieWithMessage.c
 CLIENT_OBJECTS = $(CLIENT_SOURCES:.c=.o)
 
 # Fontes e objetos do Server
-SERVER_SOURCES = $(SERVER_DIR)/ServerMain.c $(SERVER_DIR)/ServerFunctions.c $(SERVER_DIR)/dieWithMessage.c
+SERVER_SOURCES = ./Server.c ./dieWithMessage.c
 SERVER_OBJECTS = $(SERVER_SOURCES:.c=.o)
 
 # Regras principais

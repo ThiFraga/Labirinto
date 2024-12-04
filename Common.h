@@ -1,17 +1,25 @@
-#ifndef SERVER_H
-#define SERVER_H
+#ifndef COMMON_H
+#define COMMON_H
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <ctype.h>
 
 #define MAXMOVES 100
 #define MAXMAZESIZE 10
+#define MAXMOVENAMESIZE 10
 
 typedef struct
 {
     int type;
-    int moves[100];
-    int board[10][10];
+    int moves[MAXMOVES];
+    int board[MAXMAZESIZE][MAXMAZESIZE];
 } Action;
 
 typedef struct
@@ -20,10 +28,7 @@ typedef struct
     int col;
 } PlayerPos;
 
-int identifyIPVersion(const char *vrs);
 void DieWithUserMessage(const char *msg, const char *detail);
 void DieWithSystemMessage(const char *msg);
-int **getMazeFromFile(const char *filename, int *size);
-void handleGame(int clntSocket, const char *filename);
 
 #endif
